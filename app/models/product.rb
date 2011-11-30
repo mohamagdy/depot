@@ -8,6 +8,10 @@ class Product < ActiveRecord::Base
     'or PNG image.'
   validates_length_of :description, :in => 10..200, :too_short => "is too short", :too_long => "is too long"
   
+  def self.find_products_for_sale
+    find(:all, :order => "title" )
+  end
+
   protected
   def price_must_be_at_least_a_cent
     # Takecare that you are in the model and it sees all the attributes of the model
