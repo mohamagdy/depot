@@ -7,20 +7,47 @@ class StoreController < ApplicationController
       session[:counter] = session[:counter] + 1
     end
     @counter = session[:counter]
-    [@products, @counter]
+    @cart = find_cart
   end
   
   def add_to_cart
     product = Product.find(params[:id])
     @cart = find_cart
-    @cart.add_product(product)
+    @current_item = @cart.add_product(product)
+    respond_to do |format|
+      format.js if request.xhr?
+      format.html {redirect_to_index}
+    end
   rescue ActiveRecord::RecordNotFound
     logger.error("Attempt to access invalid product #{params[:id]}" )
     redirect_to_index("Invalid product" )
   end
+  
   def empty_cart
     session[:cart] = nil
-    redirect_to_index("Your cart is currently empty" )
+    redirect_to_index
+  end
+  
+  def checkout
+    @cart = find_cart
+    if @cart.items.empty?
+      redirect_to_index("Your cart is empty" )
+    else
+      @order = Order.new
+    end
+    @check_out = true
+  end
+  
+  def save_order
+    @cart = find_cart
+    @order = Order.new(params[:order])
+    @order.add_line_items_from_cart(@cart)
+    if @order.save
+      session[:cart] = nil
+      redirect_to_index("Thank you for your order" )
+    else
+      render :action => 'checkout'
+    end
   end
   
   private
